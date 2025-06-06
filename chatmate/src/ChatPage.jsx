@@ -11,6 +11,8 @@ import "./ChatPage.css";
  * - Animated AI typing, bot avatar, sound effect hooks
  * - Secure OpenAI API integration (API key from environment)
  */
+import { sendDeepSeekChat } from "./ModelClient";
+
 function ChatPage() {
   // { sender: "ai" | "user", text: string, error?: string }
   const [messages, setMessages] = useState([
