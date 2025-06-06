@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "./Navbar.css";
+// Import Link from react-router-dom if available
+let Link;
+try {
+  // eslint-disable-next-line
+  Link = require("react-router-dom").Link;
+} catch (e) {
+  Link = null;
+}
 
 // PUBLIC_INTERFACE
 /**
