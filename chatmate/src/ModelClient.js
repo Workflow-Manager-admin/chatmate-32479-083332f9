@@ -15,12 +15,12 @@ export async function sendToDeepSeek(allMessages) {
   const endpoint = "https://models.github.ai/inference";
   const model = "deepseek/DeepSeek-V3-0324";
 
-  // In Create-React-App, the .env key would be prefixed as REACT_APP_GITHUB_TOKEN
+  // In Create-React-App, the .env key MUST be prefixed as REACT_APP_GITHUB_TOKEN
   // See docs: https://create-react-app.dev/docs/adding-custom-environment-variables/
+  // For security, only expose the token via REACT_APP_GITHUB_TOKEN
   const key =
-    process.env.GITHUB_TOKEN ||
     process.env.REACT_APP_GITHUB_TOKEN ||
-    window.GITHUB_TOKEN;
+    window.REACT_APP_GITHUB_TOKEN;
   if (!key) {
     throw new Error(
       "Missing DeepSeek API key. Define REACT_APP_GITHUB_TOKEN in .env."
