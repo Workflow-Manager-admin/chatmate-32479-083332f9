@@ -195,32 +195,39 @@ async function handleRetry() {
   submitting = false;
   setUIEnabled(false);
   // Remove incomplete last AI bubble
-  if (chatMessages.length && chatMessages[chatMessages.length-1].sender === "ai")
+  if (chatMessages.length && chatMessages[chatMessages.length - 1].sender === "ai")
     chatMessages.pop();
   // try with the last user message
   const lastUserMsg =
-    chatMessages.length > 0 && chatMessages[chatMessages.length-1].sender === "user"
-      ? chatMessages[chatMessages.length-1].text
+    chatMessages.length > 0 && chatMessages[chatMessages.length - 1].sender === "user"
+      ? chatMessages[chatMessages.length - 1].text
       : null;
   if (!lastUserMsg) { setUIEnabled(true); return; }
   aiIsTyping = true;
   renderMessages();
   try {
-    const aiReply = await sendToDeepSeekApi(lastUserMsg);
+    const aiReply = await sendToBackendChatApi(lastUserMsg);
     await animateTyping(aiReply, (currentlyTyped) => {
-      if (chatMessages.length && chatMessages[chatMessages.length - 1].sender === "ai" && chatMessages[chatMessages.length - 1].isTyping)
+      if (
+        chatMessages.length &&
+        chatMessages[chatMessages.length - 1].sender === "ai" &&
+        chatMessages[chatMessages.length - 1].isTyping
+      )
         chatMessages.pop();
       chatMessages.push({ sender: "ai", text: currentlyTyped, isTyping: true });
       renderMessages();
     });
-    if (chatMessages.length && chatMessages[chatMessages.length - 1].sender === "ai")
+    if (
+      chatMessages.length &&
+      chatMessages[chatMessages.length - 1].sender === "ai"
+    )
       chatMessages[chatMessages.length - 1].isTyping = false;
     aiIsTyping = false;
     setUIEnabled(true);
     renderMessages();
     if (window.navigator.vibrate) window.navigator.vibrate(28);
   } catch (err) {
-    updateErrorBar(err.message || "Something went wrong!");
+    updateErrorBar(err.message || "Something went wrong contacting backend!");
     aiIsTyping = false;
     setUIEnabled(true);
   } finally {
