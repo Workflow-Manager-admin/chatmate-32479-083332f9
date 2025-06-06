@@ -159,15 +159,23 @@ async function handleSend(e) {
   renderMessages();
 
   try {
-    const aiReply = await sendToDeepSeekApi(userMsg);
+    // Use backend API instead of direct DeepSeek call
+    const aiReply = await sendToBackendChatApi(userMsg);
     await animateTyping(aiReply, (currentlyTyped) => {
       // each tick: update bubble for last AI message
-      if (chatMessages.length && chatMessages[chatMessages.length - 1].sender === "ai" && chatMessages[chatMessages.length - 1].isTyping)
+      if (
+        chatMessages.length &&
+        chatMessages[chatMessages.length - 1].sender === "ai" &&
+        chatMessages[chatMessages.length - 1].isTyping
+      )
         chatMessages.pop();
       chatMessages.push({ sender: "ai", text: currentlyTyped, isTyping: true });
       renderMessages();
     });
-    if (chatMessages.length && chatMessages[chatMessages.length - 1].sender === "ai")
+    if (
+      chatMessages.length &&
+      chatMessages[chatMessages.length - 1].sender === "ai"
+    )
       chatMessages[chatMessages.length - 1].isTyping = false;
     aiIsTyping = false;
     setUIEnabled(true);
@@ -175,7 +183,7 @@ async function handleSend(e) {
     // Optionally: vibrate or beep
     if (window.navigator.vibrate) window.navigator.vibrate(30);
   } catch (err) {
-    updateErrorBar(err.message || "Something went wrong!");
+    updateErrorBar(err.message || "Something went wrong contacting backend!");
     aiIsTyping = false;
     setUIEnabled(true);
   } finally {
