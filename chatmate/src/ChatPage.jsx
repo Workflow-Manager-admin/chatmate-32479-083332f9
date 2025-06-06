@@ -4,15 +4,15 @@ import "./ChatPage.css";
 // PUBLIC_INTERFACE
 /**
  * ChatPage component for AI chatting (TalkBuddy)
- * Features:
- * - Modern, floating chat container with stylish bubbles
- * - Alternating user/AI bubbles w/ avatar for AI
- * - Light/dark mode, animated AI typing, error/retry/reset/clear actions
- * - Input with send button, "Enter" to send, loading state, scroll-to-bottom
- * - Placeholder call for OpenAI integration
+ * - Message bubbles (animated, alternating, fully themed)
+ * - Input (rounded, styled), send, clear/reset
+ * - Loading indicator, error w/ retry/reset
+ * - Light/dark support
+ * - Animated AI typing, bot avatar, sound effect hooks
+ * - Secure OpenAI API integration (API key from environment)
  */
 function ChatPage() {
-  // Message { sender: "ai" | "user", text: string, error?: string }
+  // { sender: "ai" | "user", text: string, error?: string }
   const [messages, setMessages] = useState([
     {
       sender: "ai",
@@ -23,35 +23,91 @@ function ChatPage() {
   const [submitting, setSubmitting] = useState(false);
   const [aiIsTyping, setAiIsTyping] = useState(false);
   const [error, setError] = useState(null);
-  const [theme, setTheme] = useState(() =>
-    window.localStorage.getItem("theme") === "dark" ? "dark" : "light"
+  const [theme, setTheme] = useState(
+    () =>
+      window.localStorage.getItem("theme") ||
+      (window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light")
   );
 
   const chatBodyRef = useRef(null);
 
   // PUBLIC_INTERFACE
-  /** Fake OpenAI API placeholder (simulate latency/error) */
-  async function sendToAiApi(question) {
-    // This simulates a streaming/typing effect for AI
-    // (Replace with actual OpenAI fetch logic in production)
-    await new Promise((res) => setTimeout(res, 450));
-    if (question.toLowerCase().includes("fail")) {
-      // Force error if user says "fail"
-      throw new Error("Network error! Try again?");
+  /**
+   * Send user question to OpenAI API via fetch.
+   * Uses REACT_APP_OPENAI_API_KEY from .env (never commit your key!)
+   * Basic error handling; adapt for better error responses if desired.
+   */
+  async function sendToOpenAIApi(question) {
+    const API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
+    if (!API_KEY) {
+      throw new Error(
+        "OpenAI API key missing. Define REACT_APP_OPENAI_API_KEY in your .env file."
+      );
     }
-    // Simple completion for demo
-    return (
-      "Echo: " +
-      question +
-      " " +
-      ["🙂", "🤔", "🤖", "💡", "🎉"][Math.floor(Math.random() * 5)]
-    );
+    // Construct OpenAI Chat API payload (streaming not supported here)
+    const API_URL = "https://api.openai.com/v1/chat/completions";
+    const body = JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "You are a helpful AI assistant named TalkBuddy." },
+        ...messages
+          .filter((m) => ["user", "ai"].includes(m.sender))
+          .map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        { role: "user", content: question },
+      ],
+      max_tokens: 512,
+      temperature: 0.7,
+      n: 1,
+      stream: false,
+    });
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_KEY}`,
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      let msg = "Failed to connect to OpenAI API.";
+      try {
+        const errData = await response.json();
+        if (errData.error && errData.error.message) {
+          msg = errData.error.message;
+        }
+      } catch (e) {}
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const aiRaw =
+      data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+        ? data.choices[0].message.content.trim()
+        : "Sorry, I could not generate a reply.";
+    // Optionally, insert sound here: playBotReplySound();
+    return aiRaw;
+  }
+
+  // Placeholder for playing UI sound
+  function playBotReplySound() {
+    // PUBLIC_INTERFACE
+    // e.g. new Audio("/assets/reply.mp3").play();
+    // For placeholder, use webapi beep (does nothing in most browsers by default)
+    // window.navigator.vibrate?.(60); // On mobile, can vibrate
+    // To add: expose a prop/callback for parent sound control
   }
 
   // Handles input (send message)
   const handleSend = async () => {
     if (!input.trim() || submitting) return;
-    // Optimistically add user message
     setMessages((msgs) => [
       ...msgs,
       { sender: "user", text: input.trim() },
@@ -61,30 +117,69 @@ function ChatPage() {
     setAiIsTyping(true);
     setError(null);
 
-    try {
-      const userMsg = input.trim();
-      // Simulate OpenAI logic
-      const response = await sendToAiApi(userMsg);
+    const userMsg = input.trim();
 
-      // Animate "AI is typing", then reveal
-      for (let t = 0; t <= response.length; t++) {
-        await new Promise((res) => setTimeout(res, 24 + Math.random() * 18));
-        if (t === response.length) {
-          setMessages((msgs) => [
-            ...msgs,
-            { sender: "ai", text: response },
-          ]);
-          setAiIsTyping(false);
+    try {
+      // Real OpenAI API call
+      const aiReply = await sendToOpenAIApi(userMsg);
+
+      // Typing animation: reveal gradually, char by char
+      await animateTyping(aiReply, (displayed) => {
+        setMessages((msgs) => {
+          // Remove temp typing if present, then append displayed text
+          const existing = [...msgs];
+          // Remove last incomplete AI reply bubble (if any)
+          if (
+            existing.length > 0 &&
+            existing[existing.length - 1].sender === "ai" &&
+            (existing[existing.length - 1].isTyping || false)
+          ) {
+            existing.pop();
+          }
+          return [
+            ...existing,
+            {
+              sender: "ai",
+              text: displayed,
+              isTyping: true,
+            },
+          ];
+        });
+      });
+      setMessages((msgs) => {
+        // Finalize: set last AI bubble to non-typing
+        if (
+          msgs.length > 0 &&
+          msgs[msgs.length - 1].sender === "ai"
+        ) {
+          const next = [...msgs];
+          next[next.length - 1] = { ...next[next.length - 1], isTyping: false };
+          return next;
         }
-      }
+        return msgs;
+      });
+      setAiIsTyping(false);
+      setError(null);
+      playBotReplySound();
     } catch (err) {
       setError(err.message || "Something went wrong!");
       setAiIsTyping(false);
-      // Remove temp user message if you want, otherwise leave for retry
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Animate AI typing (character by character) with optional sound
+  // PUBLIC_INTERFACE
+  async function animateTyping(fullText, onUpdate) {
+    let displayed = "";
+    for (let t = 0; t <= fullText.length; t++) {
+      displayed = fullText.slice(0, t);
+      onUpdate(displayed);
+      // Optionally, add tick/beep sound per char
+      await new Promise((res) => setTimeout(res, 12 + Math.random() * 18));
+    }
+  }
 
   // Enter key support
   const handleInputKeyDown = (e) => {
@@ -94,47 +189,116 @@ function ChatPage() {
     }
   };
 
-  // Scroll to bottom when message added or AI is typing
+  // Scroll to bottom for new messages or AI typing
   useEffect(() => {
     if (chatBodyRef.current) {
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
     }
   }, [messages, aiIsTyping]);
 
-  // Retry AI response after error
+  // Retry AI response after error (retries last user message)
   const handleRetry = async () => {
     setError(null);
-    if (messages[messages.length - 1]?.sender === "user") {
-      // Re-send last user message
-      setSubmitting(false);
-      setInput(""); // Already there
-      await handleSend();
+    setSubmitting(false);
+    setInput(""); // Already included
+    // Remove last AI error (if any)
+    setMessages((msgs) => {
+      const temp = [...msgs];
+      // Remove the AI error bubble (if present as last)
+      if (
+        temp.length > 0 &&
+        temp[temp.length - 1].sender === "ai" &&
+        temp[temp.length - 1].isTyping
+      ) {
+        temp.pop();
+      }
+      return temp;
+    });
+    setAiIsTyping(true);
+    // Try last user message again
+    const userMsg =
+      messages.length > 0 && messages[messages.length - 1].sender === "user"
+        ? messages[messages.length - 1].text
+        : null;
+    if (userMsg) {
+      try {
+        const aiReply = await sendToOpenAIApi(userMsg);
+        await animateTyping(aiReply, (displayed) => {
+          setMessages((msgs) => {
+            // Remove incomplete AI bubble, then append displayed text
+            const existing = [...msgs];
+            if (
+              existing.length > 0 &&
+              existing[existing.length - 1].sender === "ai" &&
+              (existing[existing.length - 1].isTyping || false)
+            ) {
+              existing.pop();
+            }
+            return [
+              ...existing,
+              {
+                sender: "ai",
+                text: displayed,
+                isTyping: true,
+              },
+            ];
+          });
+        });
+        setMessages((msgs) => {
+          // Finalize: set last AI bubble to non-typing
+          if (
+            msgs.length > 0 &&
+            msgs[msgs.length - 1].sender === "ai"
+          ) {
+            const next = [...msgs];
+            next[next.length - 1] = { ...next[next.length - 1], isTyping: false };
+            return next;
+          }
+          return msgs;
+        });
+        setError(null);
+        setAiIsTyping(false);
+        playBotReplySound();
+      } catch (err) {
+        setError(err.message || "Something went wrong!");
+        setAiIsTyping(false);
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
-  // Reset/clear
+  // Clear/reset: back to welcome
   const handleClear = () => {
     setMessages([
-      { sender: "ai", text: "👋 Hi there! I'm TalkBuddy AI. How can I help you today?" }
+      {
+        sender: "ai",
+        text: "👋 Hi there! I'm TalkBuddy AI. How can I help you today?",
+      },
     ]);
     setInput("");
     setError(null);
     setAiIsTyping(false);
     setSubmitting(false);
-    // Optionally add focus logic here
   };
 
-  // Theme (light/dark) support - optional for isolation, handled globally by Navbar etc. too
+  // Theme (light/dark) support
   useEffect(() => {
-    document.body.classList.toggle("dark-mode", theme === "dark");
-    document.body.classList.toggle("light-mode", theme === "light");
+    if (theme === "dark") {
+      document.body.classList.add("dark-mode");
+      document.body.classList.remove("light-mode");
+    } else {
+      document.body.classList.add("light-mode");
+      document.body.classList.remove("dark-mode");
+    }
     window.localStorage.setItem("theme", theme);
   }, [theme]);
 
   const toggleTheme = () =>
     setTheme((t) => (t === "light" ? "dark" : "light"));
 
-  // Animated floating bot avatar
+  // PUBLIC_INTERFACE
+  // Animated floating bot avatar (SVG)
   function FloatingBotAvatar() {
     return (
       <span className="bot-avatar" role="img" aria-label="Bot">
@@ -160,13 +324,14 @@ function ChatPage() {
     );
   }
 
-  // Message bubble rendering
+  // Message bubble rendering (with animation for new messages)
   const renderMessage = (msg, idx) => (
     <div
       key={idx}
       className={
         "tp-chat-bubble " +
-        (msg.sender === "user" ? "bubble-user" : "bubble-ai")
+        (msg.sender === "user" ? "bubble-user" : "bubble-ai") +
+        (msg.isTyping ? " bubble-typing" : "")
       }
       aria-live="polite"
     >
@@ -179,11 +344,28 @@ function ChatPage() {
     </div>
   );
 
-  // Stylized input button, loading spinner and error
+  // AI typing indicator: animated dots
+  function TypingAnimationBubble() {
+    return (
+      <div className="tp-chat-bubble bubble-ai bubble-typing">
+        <span className="bubble-avatar">
+          <FloatingBotAvatar />
+        </span>
+        <span className="bubble-text">
+          <span className="typing-dots">
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+          </span>
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className={`tp-chat-outer ${theme}`}>
       <div className="tp-chat-wrap">
-        {/* Theme toggle - optional here */}
+        {/* Header Bar */}
         <div className="tp-header-bar">
           <span className="tp-header-title">
             <FloatingBotAvatar />{" "}
@@ -198,41 +380,40 @@ function ChatPage() {
           >
             {theme === "light" ? (
               // sun
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffd166" stroke="#ffd166"><circle cx="12" cy="12" r="5" /><g><line x1="12" y1="1.5" x2="12" y2="3.5" /><line x1="12" y1="20.5" x2="12" y2="22.5" /><line x1="4.22" y1="4.22" x2="5.7" y2="5.7" /><line x1="18.3" y1="18.3" x2="19.78" y2="19.78" /><line x1="1.5" y1="12" x2="3.5" y2="12" /><line x1="20.5" y1="12" x2="22.5" y2="12" /><line x1="4.22" y1="19.78" x2="5.7" y2="18.3" /><line x1="18.3" y1="5.7" x2="19.78" y2="4.22" /></g></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffd166" stroke="#ffd166">
+                <circle cx="12" cy="12" r="5" />
+                <g>
+                  <line x1="12" y1="1.5" x2="12" y2="3.5" />
+                  <line x1="12" y1="20.5" x2="12" y2="22.5" />
+                  <line x1="4.22" y1="4.22" x2="5.7" y2="5.7" />
+                  <line x1="18.3" y1="18.3" x2="19.78" y2="19.78" />
+                  <line x1="1.5" y1="12" x2="3.5" y2="12" />
+                  <line x1="20.5" y1="12" x2="22.5" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.7" y2="18.3" />
+                  <line x1="18.3" y1="5.7" x2="19.78" y2="4.22" />
+                </g>
+              </svg>
             ) : (
               // moon
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="#23272f" stroke="#ffd166"><path d="M21 12.79A9 9 0 0 1 12.79 3a7 7 0 1 0 8.21 9.79z" /></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#23272f" stroke="#ffd166">
+                <path d="M21 12.79A9 9 0 0 1 12.79 3a7 7 0 1 0 8.21 9.79z" />
+              </svg>
             )}
           </button>
         </div>
+        {/* Chat Messages */}
         <div className="tp-chat-body" ref={chatBodyRef}>
           {messages.map((msg, idx) => renderMessage(msg, idx))}
-          {/* AI typing bubble/animation */}
-          {aiIsTyping && (
-            <div className="tp-chat-bubble bubble-ai bubble-typing">
-              <span className="bubble-avatar">
-                <FloatingBotAvatar />
-              </span>
-              <span className="bubble-text">
-                <span className="typing-dots">
-                  <span className="dot" />
-                  <span className="dot" />
-                  <span className="dot" />
-                </span>
-              </span>
-            </div>
-          )}
+          {aiIsTyping && <TypingAnimationBubble />}
         </div>
-        {/* Error message/retry */}
+        {/* Error message with retry/reset */}
         {error && (
           <div className="tp-error-bar" role="alert">
-            <span className="tp-error-msg">
-              {error}
-            </span>
-            <button className="tp-btn tp-btn-retry" onClick={handleRetry}>
+            <span className="tp-error-msg">{error}</span>
+            <button className="tp-btn tp-btn-retry" onClick={handleRetry} disabled={submitting}>
               Retry
             </button>
-            <button className="tp-btn tp-btn-clear" onClick={handleClear}>
+            <button className="tp-btn tp-btn-clear" onClick={handleClear} disabled={submitting}>
               Reset
             </button>
           </div>
