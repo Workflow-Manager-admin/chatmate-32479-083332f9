@@ -1,13 +1,13 @@
 import React from 'react';
 import './App.css';
-import LandingPage from './LandingPage';
+import ChatPage from './ChatPage';
 
 // PUBLIC_INTERFACE
-/** Renders the TalkBuddy landing page */
+/** Renders the TalkBuddy chat page for demo */
 function App() {
   return (
     <div className="app">
-      <LandingPage />
+      <ChatPage />
     </div>
   );
 }
