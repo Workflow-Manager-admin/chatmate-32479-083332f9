@@ -1,0 +1,214 @@
+/* ===== Colors for TalkBuddy ===== */
+:root {
+  --tb-primary: #4f8cff;
+  --tb-secondary: #23272F;
+  --tb-accent: #ffd166;
+  --tb-yellow: #ffd166;
+  --tb-bg-light: rgb(208, 204, 199);
+  --tb-bg-dark-1: #000000;
+  --tb-bg-dark-2: #1a1a1a;
+  --tb-bg-dark-3: #333333;
+  --tb-link-glow: rgba(79, 140, 255, 0.3);
+}
+
+/* ===== Navbar Container ===== */
+.talkbuddy-navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  width: 100vw;
+  z-index: 1011;
+  box-shadow: 0 6px 22px 0 rgba(0,0,0,0.10), 0 1.5px 20px 0 rgba(79, 140, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(180%) brightness(1.06);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1.5px solid rgba(100,120,170,0.07);
+  transition: background 0.45s cubic-bezier(.4,.03,.35,.98), color 0.34s cubic-bezier(.4,.03,.35,.98);
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Light theme */
+.talkbuddy-navbar.light {
+  background: rgba(208, 204, 199, 0.93);
+  color: #222;
+}
+
+/* Dark theme with subtle gradient */
+.talkbuddy-navbar.dark {
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0.84) 0%,
+    rgba(26, 26, 26, 0.92) 65%,
+    rgba(51, 51, 51, 0.9) 100%
+  );
+  color: #f6f7fa;
+}
+
+/* -------- Navbar Content -------- */
+.navbar-content {
+  max-width: 1152px;
+  margin: 0 auto;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(16px, 2vw, 38px);
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  gap: 7px;
+}
+
+.chat-icon svg {
+  display: block;
+  stroke: var(--tb-primary);
+}
+
+/* Stylish brand text */
+.app-title {
+  font-family: 'Inter', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-size: 1.43rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--tb-primary), var(--tb-accent) 98%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1.1px;
+  line-height: 1.1;
+  margin-right: 12px;
+  user-select: none;
+}
+
+/* -------- Navigation Links -------- */
+.navbar-links {
+  display: flex;
+  gap: 30px;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.navbar-link {
+  text-decoration: none;
+  font-size: 1.06rem;
+  font-weight: 500;
+  color: inherit;
+  padding: 6px 13px;
+  border-radius: 6px;
+  /* Glow/highlight effect on hover/focus */
+  transition: 
+    background 0.21s cubic-bezier(.47,.14,.41,.97),
+    color 0.18s,
+    transform 0.16s;
+  position: relative;
+}
+.talkbuddy-navbar.light .navbar-link:hover,
+.talkbuddy-navbar.light .navbar-link:focus {
+  background: rgba(79, 140, 255, 0.11);
+  color: var(--tb-primary);
+  box-shadow: 0 1.5px 14px 0 var(--tb-link-glow);
+  transform: scale(1.08);
+}
+.talkbuddy-navbar.dark .navbar-link:hover,
+.talkbuddy-navbar.dark .navbar-link:focus {
+  background: rgba(79, 140, 255, 0.18);
+  color: var(--tb-yellow);
+  box-shadow: 0 1.5px 14px 0 var(--tb-link-glow);
+  transform: scale(1.09);
+}
+
+/* -------- Theme Toggle Switch -------- */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  min-width: 56px;
+}
+.theme-toggle {
+  background: none;
+  outline: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 18px;
+  display: flex;
+  align-items: center;
+  min-width: 45px;
+}
+.toggle-track {
+  display: inline-block;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  background: linear-gradient(90deg, #c9d8f8 65%, #fff 100%);
+  border-radius: 14px;
+  box-shadow: 0 1.2px 8.8px 0 rgba(79,140,255,0.08);
+  transition: background 0.23s;
+}
+.talkbuddy-navbar.dark .toggle-track {
+  background: linear-gradient(90deg, #181838, #23272f 100%);
+  box-shadow: 0 1.2px 8.8px 0 rgba(255,255,255,0.045);
+}
+
+/* toggle knob */
+.toggle-knob {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  box-shadow: 0 1.5px 6px 0 rgba(79, 140, 255, 0.16);
+  transition: left 0.22s cubic-bezier(.65,0,.35,1), background 0.2s;
+  color: #fdc534;
+  z-index: 2;
+}
+.toggle-track.toggled .toggle-knob {
+  left: 19px;
+  background: #222;
+  color: var(--tb-accent);
+}
+
+/* Smooth theme transition body support */
+body.light-mode {
+  background: var(--tb-bg-light);
+  transition: background 0.36s cubic-bezier(.41,.82,.51,1.03);
+  color: #222;
+}
+body.dark-mode {
+  background: linear-gradient(180deg, #181838 0%, #23272f 98%);
+  color: #f7faff;
+  transition: background 0.39s cubic-bezier(.51,.22,.71,1.00);
+}
+
+/* -------- Responsive -------- */
+@media (max-width: 750px) {
+  .navbar-content {
+    padding: 0 12px;
+    height: 54px;
+  }
+  .app-title {
+    font-size: 1rem;
+  }
+  .navbar-links {
+    gap: 14px;
+  }
+  .toggle-track { width: 34px; height: 20px; }
+  .toggle-knob { width: 16px; height: 16px; }
+}
+
+@media (max-width: 500px) {
+  .navbar-content {
+    gap: 0px;
+    padding: 0 4vw;
+  }
+  .navbar-links {
+    gap: 7px;
+    font-size: 0.99rem;
+  }
+}
