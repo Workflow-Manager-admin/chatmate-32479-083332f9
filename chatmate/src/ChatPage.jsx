@@ -190,7 +190,7 @@ function ChatPage() {
         : null;
     if (userMsg) {
       try {
-        const aiReply = await sendToOpenAIApi(userMsg);
+        const aiReply = await sendToDeepSeekApi(userMsg);
         await animateTyping(aiReply, (displayed) => {
           setMessages((msgs) => {
             // Remove incomplete AI bubble, then append displayed text
