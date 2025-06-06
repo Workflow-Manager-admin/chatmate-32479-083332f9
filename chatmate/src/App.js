@@ -2,11 +2,10 @@ import React from 'react';
 import './App.css';
 
 // PUBLIC_INTERFACE
-/** Renders the TalkBuddy main app container (ChatPage removed) */
+/** Renders the TalkBuddy main app container (no ChatPage integration) */
 function App() {
   return (
     <div className="app">
-      {/* ChatPage has been removed. You can add alternative content here. */}
       <div style={{
         textAlign: "center",
         marginTop: "25vh",
