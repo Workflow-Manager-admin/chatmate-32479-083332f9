@@ -36,64 +36,32 @@ function ChatPage() {
 
   // PUBLIC_INTERFACE
   /**
-   * Send user question to OpenAI API via fetch.
-   * Uses REACT_APP_OPENAI_API_KEY from .env (never commit your key!)
-   * Basic error handling; adapt for better error responses if desired.
+   * Send user question to DeepSeek API using @azure-rest/ai-inference ModelClient.
+   * Uses REACT_APP_GITHUB_TOKEN from environment (never commit your key!)
+   * Returns the AI response string or throws error.
    */
-  async function sendToOpenAIApi(question) {
-    const API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
-    if (!API_KEY) {
-      throw new Error(
-        "OpenAI API key missing. Define REACT_APP_OPENAI_API_KEY in your .env file."
-      );
-    }
-    // Construct OpenAI Chat API payload (streaming not supported here)
-    const API_URL = "https://api.openai.com/v1/chat/completions";
-    const body = JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "You are a helpful AI assistant named TalkBuddy." },
-        ...messages
-          .filter((m) => ["user", "ai"].includes(m.sender))
-          .map((m) => ({
-            role: m.sender === "user" ? "user" : "assistant",
-            content: m.text,
-          })),
-        { role: "user", content: question },
-      ],
-      max_tokens: 512,
-      temperature: 0.7,
-      n: 1,
-      stream: false,
+  import { sendDeepSeekChat } from "./ModelClient";
+
+  async function sendToDeepSeekApi(question) {
+    // Compose DeepSeek "messages" array as expected by the API
+    const deepSeekMessages = [
+      { role: "system", content: "You are a helpful AI assistant named TalkBuddy." },
+      ...messages
+        .filter((m) => ["user", "ai"].includes(m.sender))
+        .map((m) => ({
+          role: m.sender === "user" ? "user" : "assistant",
+          content: m.text,
+        })),
+      { role: "user", content: question },
+    ];
+
+    // Use typical temperature etc. (keep near OpenAI for feature parity)
+    return await sendDeepSeekChat(deepSeekMessages, {
+      // DeepSeek model settings (optional): temperature, top_p, max_tokens
+      temperature: 0.8,
+      top_p: 0.1,
+      max_tokens: 2048,
     });
-
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body,
-    });
-
-    if (!response.ok) {
-      let msg = "Failed to connect to OpenAI API.";
-      try {
-        const errData = await response.json();
-        if (errData.error && errData.error.message) {
-          msg = errData.error.message;
-        }
-      } catch (e) {}
-      throw new Error(msg);
-    }
-
-    const data = await response.json();
-    const aiRaw =
-      data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
-        ? data.choices[0].message.content.trim()
-        : "Sorry, I could not generate a reply.";
-    // Optionally, insert sound here: playBotReplySound();
-    return aiRaw;
   }
 
   // Placeholder for playing UI sound
@@ -120,8 +88,8 @@ function ChatPage() {
     const userMsg = input.trim();
 
     try {
-      // Real OpenAI API call
-      const aiReply = await sendToOpenAIApi(userMsg);
+      // Call DeepSeek API
+      const aiReply = await sendToDeepSeekApi(userMsg);
 
       // Typing animation: reveal gradually, char by char
       await animateTyping(aiReply, (displayed) => {
