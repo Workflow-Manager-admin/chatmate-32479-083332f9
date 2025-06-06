@@ -1,11 +1,12 @@
-// PUBLIC_INTERFACE
-// Standalone TalkBuddy AI Chat: Handles chat UI/UX, DeepSeek API fetch, light/dark mode, animation, errors, avatars.
+/**
+ * PUBLIC_INTERFACE
+ * Standalone TalkBuddy AI Chat: Handles chat UI/UX, AI fetch via Express backend, light/dark mode, animation, errors, avatars.
+ * Sends user messages to /chat on local Express backend (not DeepSeek API directly).
+ * Displays loading indicator while waiting, handles errors gracefully, and updates chat history.
+ */
 
-/* ------- Settings --------- */
-// Insert your DeepSeek API key below. For production, use a secure mechanism.
-const DEEPSEEK_API_KEY = "YOUR_DEEPSEEK_API_KEY_HERE"; // <-- REPLACE with actual key for real use!
-const DEEPSEEK_ENDPOINT = "https://models.github.ai/inference";
-const DEEPSEEK_MODEL = "deepseek/DeepSeek-V3-0324";
+// ---- Settings ----
+const BACKEND_CHAT_ENDPOINT = "http://localhost:12147/chat"; // Update port if backend runs elsewhere
 
 const initialMessages = [
   {
