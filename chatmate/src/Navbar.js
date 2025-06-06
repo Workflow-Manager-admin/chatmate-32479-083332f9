@@ -45,57 +45,94 @@ function Navbar() {
   // PUBLIC_INTERFACE
   /** Navigation link list */
   const navLinks = [
-    { label: "Chat", href: "#" },
-    { label: "About", href: "#" },
-    { label: "Help", href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "Chat", href: "/chat" },
+    { label: "About", href: "/about" },
+    { label: "Help", href: "/help" },
+    { label: "Contact", href: "/contact" },
   ];
-
-  // Ideally, use react-router-dom's Link, but for this template,
-  // we'll use <a href="/"> to navigate home
 
   return (
     <nav className={`talkbuddy-navbar${theme === "dark" ? " dark" : " light"}`}>
       <div className="navbar-content">
         {/* Logo + Icon */}
         <div className="navbar-left">
-          <a
-            href="/"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", color: "inherit" }}
-            aria-label="Go to home page"
-            tabIndex={0}
-          >
-            <span className="chat-icon" aria-hidden="true">
-              {/* Simple chat bubble SVG icon */}
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--tb-primary)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ marginRight: 7, verticalAlign: "middle" }}
+          {
+            Link ? (
+              <Link
+                to="/"
+                style={{ textDecoration: "none", display: "flex", alignItems: "center", color: "inherit" }}
+                aria-label="Go to home page"
+                tabIndex={0}
               >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </span>
-            <span className="app-title">TalkBuddy</span>
-          </a>
+                <span className="chat-icon" aria-hidden="true">
+                  {/* Simple chat bubble SVG icon */}
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--tb-primary)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ marginRight: 7, verticalAlign: "middle" }}
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </span>
+                <span className="app-title">TalkBuddy</span>
+              </Link>
+            ) : (
+              <a
+                href="/"
+                style={{ textDecoration: "none", display: "flex", alignItems: "center", color: "inherit" }}
+                aria-label="Go to home page"
+                tabIndex={0}
+              >
+                <span className="chat-icon" aria-hidden="true">
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--tb-primary)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ marginRight: 7, verticalAlign: "middle" }}
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </span>
+                <span className="app-title">TalkBuddy</span>
+              </a>
+            )
+          }
         </div>
         {/* Navigation links */}
         <div className="navbar-links">
-          {navLinks.map((link) => (
-            <a
-              className="navbar-link"
-              key={link.label}
-              href={link.href}
-              tabIndex={0}
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            Link ? (
+              <Link
+                className="navbar-link"
+                key={link.label}
+                to={link.href}
+                tabIndex={0}
+                aria-current={window.location.pathname === link.href ? "page" : undefined}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                className="navbar-link"
+                key={link.label}
+                href={link.href}
+                tabIndex={0}
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </div>
         {/* Theme toggle */}
         <div className="navbar-right">
