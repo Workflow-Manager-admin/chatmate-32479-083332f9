@@ -248,45 +248,31 @@ retryBtn.addEventListener("click", handleRetry);
 resetBtn.addEventListener("click", handleClear);
 themeToggleBtn.addEventListener("click", handleThemeToggle);
 
-// ----------- Chat AI API Integration ----------
-async function sendToDeepSeekApi(question) {
-  // Compose messages array as expected by DeepSeek
-  const messages = [
-    { role: "system", content: "You are a helpful AI assistant named TalkBuddy." },
-    ...chatMessages
-      .filter(m => m.sender === "user" || m.sender === "ai")
-      .map(m => ({
-        role: m.sender === "user" ? "user" : "assistant",
-        content: m.text
-      })),
-    { role: "user", content: question }
-  ];
-  // See: https://models.github.ai/api#operation/ChatCompletions_create
-  const resp = await fetch(`${DEEPSEEK_ENDPOINT}/chat/completions`, {
+/**
+ * Calls backend /chat endpoint (Express server), sending { message } and returns AI reply string (or throws error)
+ * @param {string} userMessage
+ * @returns {Promise<string>}
+ */
+async function sendToBackendChatApi(userMessage) {
+  // POST user message to Express backend; expects: { message: "..." }
+  const resp = await fetch(BACKEND_CHAT_ENDPOINT, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "api-key": DEEPSEEK_API_KEY
-    },
-    body: JSON.stringify({
-      model: DEEPSEEK_MODEL,
-      messages,
-      temperature: 0.8,
-      top_p: 0.1,
-      max_tokens: 2048
-    })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: userMessage })
   });
-  if (!resp.ok) {
-    let detail = "";
-    try { detail = (await resp.json()).error?.message || ""; } catch { /* ignore */ }
-    throw new Error(
-      "DeepSeek API error: " + (resp.statusText || "Unknown failure.") + (detail ? ` (${detail})` : "")
-    );
+  let data = null;
+  try {
+    data = await resp.json();
+  } catch (e) {
+    // Backend might be down or not responding with JSON
+    throw new Error("No valid response from backend (is it running on port 12147?)");
   }
-  const data = await resp.json();
-  if (!data.choices || !data.choices[0]?.message?.content)
-    throw new Error("Invalid DeepSeek response format.");
-  return data.choices[0].message.content.trim();
+  if (!resp.ok) {
+    // error details (handled by backend)
+    throw new Error(data && data.error ? data.error : "Unknown backend error.");
+  }
+  if (!data.reply) throw new Error("Backend response missing AI reply.");
+  return data.reply;
 }
 
 // ----------- Typing Animation ------------
