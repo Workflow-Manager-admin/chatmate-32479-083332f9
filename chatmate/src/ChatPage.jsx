@@ -42,8 +42,6 @@ function ChatPage() {
    * Uses REACT_APP_GITHUB_TOKEN from environment (never commit your key!)
    * Returns the AI response string or throws error.
    */
-  import { sendDeepSeekChat } from "./ModelClient";
-
   async function sendToDeepSeekApi(question) {
     // Compose DeepSeek "messages" array as expected by the API
     const deepSeekMessages = [
